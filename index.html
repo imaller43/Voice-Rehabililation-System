@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Voice Rehabilitation System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --header-bg: #221D3A; --header-text: #FFFFFF; --body-bg: #FFFFFF;
+            --text-primary: #1F1B2F; --text-secondary: #7F8C8D; --accent-teal: #37BC9B;
+            --accent-yellow: #FFD600; --btn-stop-bg: #E74C3C; --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--body-bg); color: var(--text-primary); }
+        
+        /* ----- Header Element ----- */
+        header {
+            background-color: var(--header-bg); color: var(--header-text);
+            padding: 15px 40px; display: flex; justify-content: space-between;
+            align-items: center; position: fixed; top: 0; width: 100%; z-index: 1000;
+        }
+        .logo { font-size: 20px; font-weight: 600; color: var(--header-text); text-decoration: none; }
+        .nav-right { display: flex; align-items: center; gap: 20px; }
+        .user-greeting { font-size: 15px; font-weight: 500; }
+        .lang-selector { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px; border-radius: 4px; font-family: 'Poppins', sans-serif; font-size: 14px; cursor: pointer; }
+        .lang-selector option { background: var(--header-bg); color: white; }
+
+        /* ----- Main Container ----- */
+        main { margin-top: 80px; padding: 80px 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; max-width: 1200px; margin-left: auto; margin-right: auto; }
+        .content-left { display: flex; flex-direction: column; gap: 25px; }
+        .main-headline { font-size: 36px; font-weight: 700; color: var(--text-primary); }
+        
+        /* Segmen Data Level Pesakit */
+        .level-badge-container { padding: 20px; background-color: #F8F9FA; border-radius: 10px; border-left: 5px solid var(--header-bg); }
+        .level-label { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+        .level-value { font-size: 22px; font-weight: 700; margin-top: 5px; color: #D35400; }
+        
+        /* Button ke Latihan */
+        .btn-training { background-color: var(--accent-teal); color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 15px; font-weight: 600; text-decoration: none; display: inline-block; width: fit-content; transition: 0.3s; text-align: center; font-family: 'Poppins', sans-serif; }
+        .btn-training:hover { background-color: #2F9A80; box-shadow: 0 4px 12px rgba(55,188,155,0.3); }
+
+        /* ----- Visual Right Side ----- */
+        .visual-right { position: relative; display: flex; justify-content: center; align-items: center; }
+        .yellow-backdrop { position: absolute; width: 100%; height: 100%; background-color: var(--accent-yellow); border-radius: 40px; transform: rotate(-3deg); z-index: -1; box-shadow: var(--card-shadow); }
+        .recording-container { background: white; padding: 30px; border-radius: 12px; box-shadow: var(--card-shadow); text-align: center; width: 100%; max-width: 450px; z-index: 10; }
+        .section-title { font-size: 18px; margin-bottom: 20px; }
+        .status-box { margin: 15px 0; font-size: 14px; background: #F8F9FA; padding: 10px; border-radius: 6px; }
+        .btn-controls { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+        .btn-control { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-family: 'Poppins', sans-serif;}
+        .btn-control:disabled { background-color: #95a5a6; cursor: not-allowed; color: rgba(255,255,255,0.7); }
+        .btn-mula { background-color: var(--accent-teal); color: white; }
+        .btn-henti { background-color: var(--btn-stop-bg); color: white; }
+        audio { margin-top: 20px; width: 100%; border-radius: 8px; height: 35px; }
+        
+        .result-panel { margin-top: 20px; padding: 15px; background-color: #F0FBF9; border-left: 4px solid var(--accent-teal); border-radius: 5px; display: none; text-align: left; }
+        .result-panel h4 { color: var(--text-primary); font-size: 15px; margin-bottom: 5px; }
+        .result-panel p { color: var(--text-secondary); font-size: 13px; }
+
+        @media (max-width: 900px) { main { grid-template-columns: 1fr; } header { padding: 15px 20px; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo" data-i18n="logoTitle">Voice Rehabilitation System</div>
+        <div class="nav-right">
+            <div class="user-greeting">
+                <span data-i18n="hiUser">Hi, </span><span id="clientName" style="font-weight: 600;">Pesakit</span>
+            </div>
+            <select id="langSelect" class="lang-selector">
+                <option value="ms">Bahasa Melayu</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+    </header>
+
+    <main>
+        <div class="content-left">
+            <h1 class="main-headline" data-i18n="diagnoseTitle">Diagnose your Voice</h1>
+            
+            <div class="level-badge-container">
+                <div class="level-label" data-i18n="currentLevelLabel">Tahap Semasa:</div>
+                <div class="level-value" id="levelDisplay">Diagnose Required First</div>
+            </div>
+            
+            <a href="training.html" class="btn-training" data-i18n="btnToTraining">Ke Laman Latihan ➔</a>
+        </div>
+
+        <div class="visual-right">
+            <div class="yellow-backdrop"></div>
+            <div class="recording-container">
+                <h3 class="section-title" data-i18n="boxTitle">🎙️ Rakaman Diagnostik</h3>
+                <div class="status-box" id="statusText">Status: Sedia...</div>
+                
+                <div class="btn-controls">
+                    <button id="startBtn" class="btn-control btn-mula" data-i18n="btnStart">▶ Mula Diagnosis</button>
+                    <button id="stopBtn" class="btn-control btn-henti" disabled data-i18n="btnStop">🛑 Berhenti</button>
+                </div>
+
+                <audio id="audioPlayback" controls></audio>
+
+                <div class="result-panel" id="resultPanel">
+                    <h4 data-i18n="resultTitle">Keputusan Analisis:</h4>
+                    <p><span data-i18n="resultLevel">Tahap Dikesan: </span> <span id="levelText" style="font-weight: bold; color: #d35400;">Normal</span></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="translations.js"></script>
+
+    <script>
+      // --- 1. SET SESSIONS & DATABASE SIMULATION ---
+    const currentUser = localStorage.getItem('currentUser') || "Guest";
+    document.getElementById('clientName').innerText = currentUser;
+
+    let currentLang = localStorage.getItem('appLang') || 'ms';
+    const langSelect = document.getElementById('langSelect');
+    langSelect.value = currentLang;
+
+    function loadPatientData() {
+        let usersDB = JSON.parse(localStorage.getItem('usersDB')) || {};
+        let patientRecord = usersDB[currentUser];
+        const levelDisplay = document.getElementById('levelDisplay');
+
+        if (patientRecord && patientRecord.level && patientRecord.level !== "Diagnose Required First") {
+            levelDisplay.innerText = patientRecord.level;
+            levelDisplay.style.color = patientRecord.level === 'Normal' ? '#27AE60' : '#D35400';
+        } else {
+            levelDisplay.innerText = translations[currentLang].diagnoseRequired;
+            levelDisplay.style.color = '#7F8C8D';
+        }
+    }
+
+    // --- 2. LOGIK PERTUKARAN BAHASA ---
+    function updateLanguage(lang) {
+        currentLang = lang;
+        document.documentElement.lang = lang;
+        localStorage.setItem('appLang', lang);
+        
+        const elements = document.querySelectorAll('[data-i18n]');
+        elements.forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            el.innerText = translations[lang][key];
+        });
+
+        if(document.getElementById('startBtn').disabled === false) {
+            document.getElementById('statusText').innerText = translations[lang].statusReady;
+        }
+        loadPatientData(); 
+    }
+
+    langSelect.addEventListener('change', (e) => updateLanguage(e.target.value));
+    updateLanguage(currentLang); 
+
+    // --- 3. LOGIK RAKAMAN DIAGNOSTIK & KEMAS KINI DB (Versi Diperbaiki) ---
+    let mediaRecorder; 
+    let audioChunks = [];
+    const startBtn = document.getElementById('startBtn'); 
+    const stopBtn = document.getElementById('stopBtn');
+    const statusText = document.getElementById('statusText'); 
+    const audioPlayback = document.getElementById('audioPlayback');
+    const resultPanel = document.getElementById('resultPanel'); 
+    const levelText = document.getElementById('levelText');
+
+    // Fungsi Mula Rakam dipanggil HANYA apabila butang ditekan
+    startBtn.addEventListener('click', async () => {
+        try {
+            // Minta akses mikrofon secara asinkronus (hanya jalan jika dalam localhost/https)
+            if (!mediaRecorder) {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.addEventListener("dataavailable", event => {
+                    audioChunks.push(event.data);
+                });
+                
+                mediaRecorder.addEventListener("stop", () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    audioPlayback.src = URL.createObjectURL(audioBlob);
+                    
+                    const levelsPool = currentLang === 'ms' ? 
+                        ['Teruk', 'Sederhana Gagap', 'Kurang Gagap', 'Normal'] : 
+                        ['Severe', 'Moderate Stutter', 'Mild Stutter', 'Normal'];
+                    
+                    const detectedLevel = levelsPool[Math.floor(Math.random() * levelsPool.length)];
+                    
+                    levelText.innerText = detectedLevel;
+                    resultPanel.style.display = "block";
+
+                    let usersDB = JSON.parse(localStorage.getItem('usersDB')) || {};
+                    if (!usersDB[currentUser]) usersDB[currentUser] = {};
+                    
+                    usersDB[currentUser].level = detectedLevel; 
+                    localStorage.setItem('usersDB', JSON.stringify(usersDB));
+                    loadPatientData();
+                });
+            }
+
+            // Mula proses rakaman
+            audioChunks = []; 
+            mediaRecorder.start();
+            statusText.innerText = translations[currentLang].statusRec;
+            statusText.style.color = "#E74C3C"; 
+            startBtn.disabled = true; 
+            stopBtn.disabled = false; 
+            resultPanel.style.display = "none";
+
+        } catch (error) {
+            console.error("Ralat Mikrofon:", error);
+            // Mesej amaran jelas jika pelayar menyekat akses (isu file://)
+            alert("Akses mikrofon ditolak! \n\nSila pastikan:\n1. Anda telah memberi kebenaran (Allow) mikrofon.\n2. Laman web ini dijalankan di atas 'localhost' (Guna Live Server), bukan dibuka terus sebagai fail (file:///).");
+            statusText.innerText = translations[currentLang].statusError; 
+            statusText.style.color = "#C0392B";
+        }
+    });
+
+    stopBtn.addEventListener('click', () => {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+            statusText.innerText = translations[currentLang].statusDone;
+            statusText.style.color = "#37BC9B"; 
+            startBtn.disabled = false; 
+            stopBtn.disabled = true;
+        }
+    });
+    </script>
+</body>
+</html>
