@@ -14,33 +14,27 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Poppins', sans-serif; background-color: var(--body-bg); color: var(--text-primary); }
         
-        /* ----- Header Element ----- */
-        header {
-            background-color: var(--header-bg); color: var(--header-text);
-            padding: 15px 40px; display: flex; justify-content: space-between;
-            align-items: center; position: fixed; top: 0; width: 100%; z-index: 1000;
-        }
+        header { background-color: var(--header-bg); color: var(--header-text); padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; width: 100%; z-index: 1000; }
         .logo { font-size: 20px; font-weight: 600; color: var(--header-text); text-decoration: none; }
         .nav-right { display: flex; align-items: center; gap: 20px; }
         .user-greeting { font-size: 15px; font-weight: 500; }
         .lang-selector { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px; border-radius: 4px; font-family: 'Poppins', sans-serif; font-size: 14px; cursor: pointer; }
         .lang-selector option { background: var(--header-bg); color: white; }
 
-        /* ----- Main Container ----- */
+        /* Butang Log Keluar (Baru) */
+        .btn-logout { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); padding: 8px 15px; border-radius: 4px; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: 0.3s; margin-left: 5px; }
+        .btn-logout:hover { background-color: rgba(255,255,255,0.1); border-color: white; }
+
         main { margin-top: 80px; padding: 80px 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; max-width: 1200px; margin-left: auto; margin-right: auto; }
         .content-left { display: flex; flex-direction: column; gap: 25px; }
         .main-headline { font-size: 36px; font-weight: 700; color: var(--text-primary); }
         
-        /* Segmen Data Level Pesakit */
         .level-badge-container { padding: 20px; background-color: #F8F9FA; border-radius: 10px; border-left: 5px solid var(--header-bg); }
-        .level-label { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
-        .level-value { font-size: 22px; font-weight: 700; margin-top: 5px; color: #D35400; }
+        .level-label { font-size: 14px; color: var(--text-secondary); font-weight: 500; margin-bottom: 5px; }
         
-        /* Button ke Latihan */
         .btn-training { background-color: var(--accent-teal); color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 15px; font-weight: 600; text-decoration: none; display: inline-block; width: fit-content; transition: 0.3s; text-align: center; font-family: 'Poppins', sans-serif; }
         .btn-training:hover { background-color: #2F9A80; box-shadow: 0 4px 12px rgba(55,188,155,0.3); }
 
-        /* ----- Visual Right Side ----- */
         .visual-right { position: relative; display: flex; justify-content: center; align-items: center; }
         .yellow-backdrop { position: absolute; width: 100%; height: 100%; background-color: var(--accent-yellow); border-radius: 40px; transform: rotate(-3deg); z-index: -1; box-shadow: var(--card-shadow); }
         .recording-container { background: white; padding: 30px; border-radius: 12px; box-shadow: var(--card-shadow); text-align: center; width: 100%; max-width: 450px; z-index: 10; }
@@ -72,6 +66,7 @@
                 <option value="ms">Bahasa Melayu</option>
                 <option value="en">English</option>
             </select>
+            <button id="logoutBtn" class="btn-logout" data-i18n="btnLogout">Daftar Keluar</button>
         </div>
     </header>
 
@@ -80,8 +75,8 @@
             <h1 class="main-headline" data-i18n="diagnoseTitle">Diagnose your Voice</h1>
             
             <div class="level-badge-container">
-                <div class="level-label" data-i18n="currentLevelLabel">Tahap Semasa:</div>
-                <div class="level-value" id="levelDisplay">Diagnose Required First</div>
+                <div class="level-label" data-i18n="selectLevelLabel">Pilih Tahap Latihan Anda:</div>
+                <div id="levelsListContainer">Memuatkan data...</div>
             </div>
             
             <a href="training.html" class="btn-training" data-i18n="btnToTraining">Ke Laman Latihan ➔</a>
@@ -111,108 +106,209 @@
     <script src="translations.js"></script>
 
     <script>
-      // --- 1. SET SESSIONS & DATABASE SIMULATION ---
+    // --- PENYEDIAAN SESI SEMASA ---
     const currentUser = localStorage.getItem('currentUser') || "Guest";
+    
+    // Jika tiada sesi / belum login, tendang balik ke muka log masuk
+    if (currentUser === "Guest") {
+        window.location.href = 'login.html';
+    }
+    
     document.getElementById('clientName').innerText = currentUser;
-
     let currentLang = localStorage.getItem('appLang') || 'ms';
-    const langSelect = document.getElementById('langSelect');
-    langSelect.value = currentLang;
+    document.getElementById('langSelect').value = currentLang;
 
+    // --- LOGIK LOGOUT (BARU) ---
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        let confirmMsg = translations[currentLang].logoutConfirm;
+        if (confirm(confirmMsg)) {
+            localStorage.removeItem('currentUser'); // Padam nama pengguna yang aktif
+            window.location.href = 'login.html'; // Bawa balik ke skrin depan
+        }
+    });
+
+    // Fungsi Tukar Nama AI Ke Key Piawai (Standard)
+    function getStandardLevel(lvlStr) {
+        let s = (lvlStr || "").toLowerCase();
+        if(s.includes("teruk") || s.includes("severe")) return "SEVERE";
+        if(s.includes("sederhana") || s.includes("moderate")) return "MODERATE";
+        if(s.includes("kurang") || s.includes("mild")) return "MILD";
+        if(s.includes("normal")) return "NORMAL";
+        return "";
+    }
+
+    // Fungsi Render Pilihan Level Pesakit
     function loadPatientData() {
         let usersDB = JSON.parse(localStorage.getItem('usersDB')) || {};
-        let patientRecord = usersDB[currentUser];
-        const levelDisplay = document.getElementById('levelDisplay');
+        let patient = usersDB[currentUser];
 
-        if (patientRecord && patientRecord.level && patientRecord.level !== "Diagnose Required First") {
-            levelDisplay.innerText = patientRecord.level;
-            levelDisplay.style.color = patientRecord.level === 'Normal' ? '#27AE60' : '#D35400';
+        // Migrasi Data Lama Jika Tiada Array 'levels'
+        if (patient && !patient.levels) {
+            patient.levels = [];
+            let std = getStandardLevel(patient.level);
+            if(std) patient.levels.push(std);
+            patient.level = std;
+        }
+
+        const levelsContainer = document.getElementById('levelsListContainer');
+        levelsContainer.innerHTML = "";
+
+        if (patient && patient.levels && patient.levels.length > 0) {
+            patient.levels.forEach((lvl) => {
+                let displayStr = ""; let colorStr = "";
+                if(lvl === "SEVERE") { displayStr = currentLang==='ms'?"Teruk":"Severe"; colorStr = "#E74C3C"; }
+                else if(lvl === "MODERATE") { displayStr = currentLang==='ms'?"Sederhana":"Moderate"; colorStr = "#D35400"; }
+                else if(lvl === "MILD") { displayStr = currentLang==='ms'?"Kurang":"Mild"; colorStr = "#F39C12"; }
+                else if(lvl === "NORMAL") { displayStr = "Normal"; colorStr = "#27AE60"; }
+
+                let isChecked = (patient.level === lvl) ? "checked" : "";
+
+                levelsContainer.innerHTML += `
+                    <label style="display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 12px; background: white; border-radius: 8px; border: 1px solid #eee; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                        <input type="radio" name="levelSelect" value="${lvl}" ${isChecked} onchange="selectTrainingLevel('${lvl}')">
+                        <span style="font-size: 16px; font-weight: 600; color: ${colorStr};">${displayStr}</span>
+                    </label>
+                `;
+            });
+            // Auto Select Jika Tiada Pilihan Dibuat
+            if (!patient.level || !patient.levels.includes(patient.level)) {
+                selectTrainingLevel(patient.levels[patient.levels.length - 1]);
+            }
         } else {
-            levelDisplay.innerText = translations[currentLang].diagnoseRequired;
-            levelDisplay.style.color = '#7F8C8D';
+            levelsContainer.innerHTML = `<div style="font-size: 15px; font-weight: 600; color: #7F8C8D; margin-top: 10px;" data-i18n="diagnoseRequired">${translations[currentLang].diagnoseRequired}</div>`;
         }
     }
 
-    // --- 2. LOGIK PERTUKARAN BAHASA ---
-    function updateLanguage(lang) {
-        currentLang = lang;
-        document.documentElement.lang = lang;
-        localStorage.setItem('appLang', lang);
-        
-        const elements = document.querySelectorAll('[data-i18n]');
-        elements.forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            el.innerText = translations[lang][key];
-        });
+    // Fungsi Mengemaskini Tahap Latihan Dipilih Ke Database
+    window.selectTrainingLevel = function(lvl) {
+        let usersDB = JSON.parse(localStorage.getItem('usersDB')) || {};
+        if (usersDB[currentUser]) {
+            usersDB[currentUser].level = lvl;
+            localStorage.setItem('usersDB', JSON.stringify(usersDB));
+        }
+    }
 
+    function updateLanguage(lang) {
+        currentLang = lang; document.documentElement.lang = lang; localStorage.setItem('appLang', lang);
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            if (translations[lang][el.getAttribute('data-i18n')]) {
+                el.innerText = translations[lang][el.getAttribute('data-i18n')];
+            }
+        });
         if(document.getElementById('startBtn').disabled === false) {
             document.getElementById('statusText').innerText = translations[lang].statusReady;
         }
         loadPatientData(); 
     }
 
-    langSelect.addEventListener('change', (e) => updateLanguage(e.target.value));
+    document.getElementById('langSelect').addEventListener('change', (e) => updateLanguage(e.target.value));
     updateLanguage(currentLang); 
 
-    // --- 3. LOGIK RAKAMAN DIAGNOSTIK & KEMAS KINI DB (Versi Diperbaiki) ---
-    let mediaRecorder; 
-    let audioChunks = [];
-    const startBtn = document.getElementById('startBtn'); 
-    const stopBtn = document.getElementById('stopBtn');
-    const statusText = document.getElementById('statusText'); 
-    const audioPlayback = document.getElementById('audioPlayback');
-    const resultPanel = document.getElementById('resultPanel'); 
-    const levelText = document.getElementById('levelText');
+    // --- LOGIK RAKAMAN & SISTEM OVERWRITE ---
+    let mediaRecorder; let audioChunks = [];
+    const startBtn = document.getElementById('startBtn'); const stopBtn = document.getElementById('stopBtn');
+    const statusText = document.getElementById('statusText'); const audioPlayback = document.getElementById('audioPlayback');
+    const resultPanel = document.getElementById('resultPanel'); const levelText = document.getElementById('levelText');
 
-    // Fungsi Mula Rakam dipanggil HANYA apabila butang ditekan
     startBtn.addEventListener('click', async () => {
+        let usersDB = JSON.parse(localStorage.getItem('usersDB')) || {};
+        let patient = usersDB[currentUser] || {};
+        let pLevels = patient.levels || [];
+
+        // Paparkan amaran jika kotak sudah penuh (2 Level)
+        if (pLevels.length >= 2) {
+            let confirmMsg = translations[currentLang].overwriteWarning;
+            if (!confirm(confirmMsg)) {
+                return; 
+            }
+        }
+
         try {
-            // Minta akses mikrofon secara asinkronus (hanya jalan jika dalam localhost/https)
             if (!mediaRecorder) {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
                 
-                mediaRecorder.addEventListener("dataavailable", event => {
-                    audioChunks.push(event.data);
-                });
+                mediaRecorder.addEventListener("dataavailable", event => audioChunks.push(event.data));
                 
-                mediaRecorder.addEventListener("stop", () => {
+                mediaRecorder.addEventListener("stop", async () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                     audioPlayback.src = URL.createObjectURL(audioBlob);
                     
-                    const levelsPool = currentLang === 'ms' ? 
-                        ['Teruk', 'Sederhana Gagap', 'Kurang Gagap', 'Normal'] : 
-                        ['Severe', 'Moderate Stutter', 'Mild Stutter', 'Normal'];
-                    
-                    const detectedLevel = levelsPool[Math.floor(Math.random() * levelsPool.length)];
-                    
-                    levelText.innerText = detectedLevel;
-                    resultPanel.style.display = "block";
+                    // Tunjukkan status "Memproses" sementara menunggu Python membalas
+                    statusText.innerText = "Status: 🟡 Menghantar ke Pelayan AI...";
+                    statusText.style.color = "#F39C12";
+                    resultPanel.style.display = "none";
 
-                    let usersDB = JSON.parse(localStorage.getItem('usersDB')) || {};
-                    if (!usersDB[currentUser]) usersDB[currentUser] = {};
-                    
-                    usersDB[currentUser].level = detectedLevel; 
-                    localStorage.setItem('usersDB', JSON.stringify(usersDB));
-                    loadPatientData();
+                    // 1. Bungkus fail audio ke dalam format Form-Data
+                    const formData = new FormData();
+                    formData.append("audio", audioBlob, "diagnostic.wav");
+
+                    try {
+                        // 2. Tembak API ke Pelayan Python (Flask)
+                        const response = await fetch("http://127.0.0.1:5000/api/diagnose", {
+                            method: "POST",
+                            body: formData
+                        });
+
+                        if (!response.ok) {
+                            throw new Error("Ralat sambungan ke pelayan AI.");
+                        }
+
+                        // 3. Terima maklum balas dari Python
+                        const data = await response.json();
+                        
+                        // Cth data.level = "SEVERE", "MODERATE", "MILD", atau "NORMAL"
+                        const stdDetected = getStandardLevel(data.level); 
+                        
+                        // Paparkan perkataan mengikut bahasa yang dipilih pengguna
+                        let displayLvlStr = stdDetected;
+                        if(currentLang === 'ms') {
+                            if(stdDetected === "SEVERE") displayLvlStr = "Teruk";
+                            if(stdDetected === "MODERATE") displayLvlStr = "Sederhana";
+                            if(stdDetected === "MILD") displayLvlStr = "Kurang";
+                            if(stdDetected === "NORMAL") displayLvlStr = "Normal";
+                        }
+                        
+                        levelText.innerText = displayLvlStr;
+                        resultPanel.style.display = "block";
+
+                        // --- LOGIK DATABASE (Sama seperti sebelum ini) ---
+                        let db = JSON.parse(localStorage.getItem('usersDB')) || {};
+                        if (!db[currentUser]) db[currentUser] = { levels: [], level: "" };
+                        let pat = db[currentUser];
+                        if (!pat.levels) pat.levels = [];
+
+                        if (pat.levels.includes(stdDetected)) {
+                            alert(translations[currentLang].sameLevelMsg);
+                        } else {
+                            if (pat.levels.length >= 2) {
+                                pat.levels.shift(); 
+                            }
+                            pat.levels.push(stdDetected);
+                            pat.level = stdDetected; 
+                        }
+
+                        localStorage.setItem('usersDB', JSON.stringify(db));
+                        loadPatientData(); // Refresh UI Kiri
+
+                        // Kemas kini status selesai
+                        statusText.innerText = translations[currentLang].statusDone;
+                        statusText.style.color = "#37BC9B"; 
+
+                    } catch (error) {
+                        console.error(error);
+                        alert("Gagal berhubung dengan AI. Pastikan pelayan Python (app.py) sedang berjalan!");
+                        statusText.innerText = "Status: ❌ Ralat Pelayan AI";
+                        statusText.style.color = "#E74C3C";
+                    }
                 });
             }
 
-            // Mula proses rakaman
-            audioChunks = []; 
-            mediaRecorder.start();
+            audioChunks = []; mediaRecorder.start();
             statusText.innerText = translations[currentLang].statusRec;
-            statusText.style.color = "#E74C3C"; 
-            startBtn.disabled = true; 
-            stopBtn.disabled = false; 
-            resultPanel.style.display = "none";
-
+            statusText.style.color = "#E74C3C"; startBtn.disabled = true; stopBtn.disabled = false; resultPanel.style.display = "none";
         } catch (error) {
-            console.error("Ralat Mikrofon:", error);
-            // Mesej amaran jelas jika pelayar menyekat akses (isu file://)
-            alert("Akses mikrofon ditolak! \n\nSila pastikan:\n1. Anda telah memberi kebenaran (Allow) mikrofon.\n2. Laman web ini dijalankan di atas 'localhost' (Guna Live Server), bukan dibuka terus sebagai fail (file:///).");
-            statusText.innerText = translations[currentLang].statusError; 
-            statusText.style.color = "#C0392B";
+            alert("Akses mikrofon ditolak! Pastikan dibenarkan dan URL menggunakan localhost.");
         }
     });
 
@@ -220,9 +316,7 @@
         if (mediaRecorder && mediaRecorder.state === "recording") {
             mediaRecorder.stop();
             statusText.innerText = translations[currentLang].statusDone;
-            statusText.style.color = "#37BC9B"; 
-            startBtn.disabled = false; 
-            stopBtn.disabled = true;
+            statusText.style.color = "#37BC9B"; startBtn.disabled = false; stopBtn.disabled = true;
         }
     });
     </script>
